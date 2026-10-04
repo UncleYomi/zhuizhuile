@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="一个简单、轻松的网页贪吃蛇小游戏" />
+    <title>贪吃蛇小游戏</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="game-header">
+        <div>
+          <p class="eyebrow">我们一起做的小游戏</p>
+          <h1>贪吃蛇</h1>
+        </div>
+        <div class="score-card" aria-live="polite">
+          <span>得分</span>
+          <strong id="score">0</strong>
+        </div>
+      </header>
+
+      <section class="game-card" aria-label="贪吃蛇游戏区域">
+        <div class="canvas-wrap">
+          <canvas
+            id="game-canvas"
+            width="400"
+            height="400"
+            aria-label="贪吃蛇游戏地图"
+          ></canvas>
+          <div id="game-message" class="game-message" aria-hidden="false">
+            <p id="message-title" class="message-title">准备好了吗？</p>
+            <p id="message-detail">吃到红色食物会变长，注意不要撞墙。</p>
+          </div>
+        </div>
+
+        <button id="start-button" class="start-button" type="button">开始游戏</button>
+        <p class="instructions">使用键盘方向键或 W A S D 控制方向</p>
+      </section>
+    </main>
+
+    <script src="src/game-engine.js"></script>
+    <script src="src/game.js"></script>
+  </body>
+</html>

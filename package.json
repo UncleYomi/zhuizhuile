@@ -1,0 +1,9 @@
+{
+  "name": "kids-snake-game",
+  "version": "0.1.0",
+  "private": true,
+  "description": "和小朋友一起创作的网页贪吃蛇游戏",
+  "scripts": {
+    "test": "node --test"
+  }
+}
