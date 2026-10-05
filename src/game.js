@@ -53,11 +53,13 @@
       Object.freeze({ id: "snake", name: "小蛇", icon: "🐍" }),
       Object.freeze({ id: "cat", name: "小猫", icon: "🐱" }),
       Object.freeze({ id: "chicken", name: "小鸡", icon: "🐥" }),
+      Object.freeze({ id: "cheetah", name: "猎豹", icon: "🐆" }),
     ]),
     target: Object.freeze([
       Object.freeze({ id: "apple", name: "苹果", icon: "🍎" }),
       Object.freeze({ id: "mouse", name: "老鼠", icon: "🐭" }),
       Object.freeze({ id: "worm", name: "虫子", icon: "🐛" }),
+      Object.freeze({ id: "deer", name: "鹿", icon: "🦌" }),
     ]),
   });
   const customAvatarData = {
@@ -299,6 +301,63 @@
     context.restore();
   }
 
+  function drawDeer() {
+    if (!game.target) return;
+
+    const centerX = (game.target.x + 0.5) * cellSize;
+    const centerY = (game.target.y + 0.55) * cellSize;
+    const unit = cellSize / 20;
+    context.save();
+    context.translate(centerX, centerY);
+    context.scale(unit, unit);
+    context.lineCap = "round";
+    context.lineJoin = "round";
+
+    context.strokeStyle = "#79513a";
+    context.lineWidth = 1.5;
+    [-1, 1].forEach((side) => {
+      context.beginPath();
+      context.moveTo(side * 3.4, -5.8);
+      context.lineTo(side * 4.7, -10);
+      context.moveTo(side * 4.3, -8.6);
+      context.lineTo(side * 7, -10.5);
+      context.moveTo(side * 4.8, -7.3);
+      context.lineTo(side * 7.4, -7.8);
+      context.stroke();
+    });
+
+    context.fillStyle = "#a86e43";
+    context.beginPath();
+    context.moveTo(-4.2, -4.7);
+    context.lineTo(-9, -7.5);
+    context.lineTo(-7.2, -1.8);
+    context.closePath();
+    context.fill();
+    context.beginPath();
+    context.moveTo(4.2, -4.7);
+    context.lineTo(9, -7.5);
+    context.lineTo(7.2, -1.8);
+    context.closePath();
+    context.fill();
+
+    context.beginPath();
+    context.ellipse(0, 0, 6.7, 8, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#f1d2aa";
+    context.beginPath();
+    context.ellipse(0, 3.5, 3.7, 3, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#26342f";
+    context.beginPath();
+    context.arc(-2.5, -1.1, 0.8, 0, Math.PI * 2);
+    context.arc(2.5, -1.1, 0.8, 0, Math.PI * 2);
+    context.arc(0, 3.2, 1.05, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
   function drawCustomImage(image, cell, inset = 1) {
     if (!image || !cell) return false;
 
@@ -326,6 +385,8 @@
       drawMouse();
     } else if (selectedTarget === "worm") {
       drawWorm();
+    } else if (selectedTarget === "deer") {
+      drawDeer();
     } else {
       drawApple();
     }
@@ -477,6 +538,71 @@
     drawChickenHead(game.segments[0]);
   }
 
+  function drawCheetahHead(head) {
+    const centerX = (head.x + 0.5) * cellSize;
+    const centerY = (head.y + 0.5) * cellSize;
+    const unit = cellSize / 20;
+    context.save();
+    context.translate(centerX, centerY);
+    context.rotate(catRotation());
+    context.scale(unit, unit);
+
+    context.fillStyle = "#e7a93d";
+    context.beginPath();
+    context.arc(-5.2, -5.7, 3.1, 0, Math.PI * 2);
+    context.arc(5.2, -5.7, 3.1, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.ellipse(0, 0, 7.5, 8, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#f3d291";
+    context.beginPath();
+    context.ellipse(0, 3.4, 4.3, 3.2, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#26342f";
+    context.beginPath();
+    context.arc(-2.7, -1.3, 1, 0, Math.PI * 2);
+    context.arc(2.7, -1.3, 1, 0, Math.PI * 2);
+    context.arc(0, 2.5, 1.15, 0, Math.PI * 2);
+    context.fill();
+
+    [[-4.8, 1], [4.8, 1], [-3.8, -5], [3.8, -5]].forEach(([x, y]) => {
+      context.beginPath();
+      context.arc(x, y, 0.85, 0, Math.PI * 2);
+      context.fill();
+    });
+
+    context.strokeStyle = "#26342f";
+    context.lineWidth = 0.8;
+    context.beginPath();
+    context.moveTo(-2.3, -0.5);
+    context.lineTo(-1.4, 2.1);
+    context.moveTo(2.3, -0.5);
+    context.lineTo(1.4, 2.1);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawCheetah() {
+    game.segments.slice(1).forEach((part, bodyIndex) => {
+      const isTailTip = bodyIndex === game.segments.length - 2;
+      drawRoundedCell(part.x, part.y, isTailTip ? "#26342f" : "#e7a93d", 3, 7);
+
+      if (!isTailTip) {
+        const centerX = (part.x + 0.5) * cellSize;
+        const centerY = (part.y + 0.5) * cellSize;
+        context.fillStyle = "#5d4933";
+        context.beginPath();
+        context.arc(centerX - cellSize * 0.2, centerY - cellSize * 0.13, cellSize * 0.065, 0, Math.PI * 2);
+        context.arc(centerX + cellSize * 0.18, centerY + cellSize * 0.18, cellSize * 0.06, 0, Math.PI * 2);
+        context.fill();
+      }
+    });
+    drawCheetahHead(game.segments[0]);
+  }
+
   function drawCustomCharacter() {
     game.segments.slice(1).forEach((part, bodyIndex) => {
       const isTailTip = bodyIndex === game.segments.length - 2;
@@ -491,6 +617,8 @@
   function drawCharacter() {
     if (selectedCharacter === "custom") {
       drawCustomCharacter();
+    } else if (selectedCharacter === "cheetah") {
+      drawCheetah();
     } else if (selectedCharacter === "chicken") {
       drawChicken();
     } else if (selectedCharacter === "cat") {
