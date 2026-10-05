@@ -47,4 +47,9 @@ npm test
 
 ## 发布状态
 
-当前只保存在本地，尚未连接远程仓库，也没有公开发布。完成主题创作、移动设备适配以及隐私检查后，再发布分享链接。
+游戏已经公开发布：
+
+- 游玩地址：<https://uncleyomi.github.io/zhuizhuile/>
+- 项目仓库：<https://github.com/UncleYomi/zhuizhuile>
+
+电脑可以使用方向键游玩。手机目前可以打开页面，但触屏方向按钮仍在第三阶段的待办列表中。
