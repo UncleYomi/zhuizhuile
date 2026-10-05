@@ -56,6 +56,7 @@
       Object.freeze({ id: "chicken", name: "小鸡", icon: "🐥" }),
       Object.freeze({ id: "cheetah", name: "猎豹", icon: "🐆" }),
       Object.freeze({ id: "person", name: "小朋友", icon: "🧒" }),
+      Object.freeze({ id: "toilet", name: "马桶", icon: "🚽" }),
     ]),
     target: Object.freeze([
       Object.freeze({ id: "apple", name: "苹果", icon: "🍎" }),
@@ -63,6 +64,7 @@
       Object.freeze({ id: "worm", name: "虫子", icon: "🐛" }),
       Object.freeze({ id: "deer", name: "鹿", icon: "🦌" }),
       Object.freeze({ id: "frog", name: "小青蛙", icon: "🐸" }),
+      Object.freeze({ id: "poop", name: "大便", icon: "💩" }),
     ]),
   });
   const mazeWalls = Object.freeze(
@@ -457,6 +459,38 @@
     context.restore();
   }
 
+  function drawPoop() {
+    if (!game.target) return;
+
+    const centerX = (game.target.x + 0.5) * cellSize;
+    const centerY = (game.target.y + 0.56) * cellSize;
+    const unit = cellSize / 20;
+    context.save();
+    context.translate(centerX, centerY);
+    context.scale(unit, unit);
+
+    context.fillStyle = "#8b5a35";
+    context.beginPath();
+    context.ellipse(0, 5, 8, 4.5, 0, 0, Math.PI * 2);
+    context.ellipse(0, 0.5, 6.3, 4.5, 0, 0, Math.PI * 2);
+    context.ellipse(0.8, -3.4, 4.3, 3.8, 0, 0, Math.PI * 2);
+    context.moveTo(-0.5, -5.5);
+    context.quadraticCurveTo(2.5, -9.5, 4.2, -5.5);
+    context.fill();
+
+    context.fillStyle = "#fffdf8";
+    context.beginPath();
+    context.arc(-2.3, 0.6, 1.2, 0, Math.PI * 2);
+    context.arc(2.3, 0.6, 1.2, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#26342f";
+    context.beginPath();
+    context.arc(-2.2, 0.8, 0.55, 0, Math.PI * 2);
+    context.arc(2.2, 0.8, 0.55, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
   function drawCustomImage(image, cell, inset = 1) {
     if (!image || !cell) return false;
 
@@ -488,6 +522,8 @@
       drawDeer();
     } else if (selectedTarget === "frog") {
       drawFrog();
+    } else if (selectedTarget === "poop") {
+      drawPoop();
     } else {
       drawApple();
     }
@@ -763,6 +799,43 @@
     drawPersonHead(game.segments[0]);
   }
 
+  function drawToiletHead(head) {
+    const centerX = (head.x + 0.5) * cellSize;
+    const centerY = (head.y + 0.5) * cellSize;
+    const unit = cellSize / 20;
+    context.save();
+    context.translate(centerX, centerY);
+    context.rotate(catRotation());
+    context.scale(unit, unit);
+
+    context.fillStyle = "#e9efed";
+    context.strokeStyle = "#6f8780";
+    context.lineWidth = 1;
+    context.beginPath();
+    context.roundRect(-5.5, -9, 11, 6, 1.5);
+    context.fill();
+    context.stroke();
+
+    context.beginPath();
+    context.ellipse(0, 2.2, 7.5, 7, 0, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+
+    context.fillStyle = "#88c9d4";
+    context.beginPath();
+    context.ellipse(0, 1.5, 4.6, 3.8, 0, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
+  function drawToilet() {
+    game.segments.slice(1).forEach((part, bodyIndex) => {
+      const isTailTip = bodyIndex === game.segments.length - 2;
+      drawRoundedCell(part.x, part.y, isTailTip ? "#88c9d4" : "#dbe7e4", 3, 7);
+    });
+    drawToiletHead(game.segments[0]);
+  }
+
   function drawCustomCharacter() {
     game.segments.slice(1).forEach((part, bodyIndex) => {
       const isTailTip = bodyIndex === game.segments.length - 2;
@@ -777,6 +850,8 @@
   function drawCharacter() {
     if (selectedCharacter === "custom") {
       drawCustomCharacter();
+    } else if (selectedCharacter === "toilet") {
+      drawToilet();
     } else if (selectedCharacter === "person") {
       drawPerson();
     } else if (selectedCharacter === "cheetah") {
