@@ -54,6 +54,7 @@
       Object.freeze({ id: "cat", name: "小猫", icon: "🐱" }),
       Object.freeze({ id: "chicken", name: "小鸡", icon: "🐥" }),
       Object.freeze({ id: "cheetah", name: "猎豹", icon: "🐆" }),
+      Object.freeze({ id: "person", name: "小朋友", icon: "🧒" }),
     ]),
     target: Object.freeze([
       Object.freeze({ id: "apple", name: "苹果", icon: "🍎" }),
@@ -603,6 +604,65 @@
     drawCheetahHead(game.segments[0]);
   }
 
+  function drawPersonHead(head) {
+    const centerX = (head.x + 0.5) * cellSize;
+    const centerY = (head.y + 0.5) * cellSize;
+    const unit = cellSize / 20;
+    context.save();
+    context.translate(centerX, centerY);
+    context.rotate(catRotation());
+    context.scale(unit, unit);
+
+    context.fillStyle = "#f2c49d";
+    context.beginPath();
+    context.arc(-7.1, 0.6, 2.1, 0, Math.PI * 2);
+    context.arc(7.1, 0.6, 2.1, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.ellipse(0, 0.8, 7.3, 8, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#4b3428";
+    context.beginPath();
+    context.arc(0, 0, 7.6, Math.PI, Math.PI * 2);
+    context.lineTo(6.3, -1.1);
+    context.quadraticCurveTo(2.5, -4.2, 0.6, -1.4);
+    context.quadraticCurveTo(-1.6, -4.1, -6.5, -1);
+    context.closePath();
+    context.fill();
+
+    context.fillStyle = "#26342f";
+    context.beginPath();
+    context.arc(-2.7, 0.8, 0.9, 0, Math.PI * 2);
+    context.arc(2.7, 0.8, 0.9, 0, Math.PI * 2);
+    context.fill();
+
+    context.strokeStyle = "#a4534c";
+    context.lineWidth = 0.9;
+    context.lineCap = "round";
+    context.beginPath();
+    context.arc(0, 2.6, 2.7, 0.25, Math.PI - 0.25);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawPerson() {
+    game.segments.slice(1).forEach((part, bodyIndex) => {
+      const isShoe = bodyIndex === game.segments.length - 2;
+      drawRoundedCell(part.x, part.y, isShoe ? "#4b3428" : "#4c8fc8", 3, 7);
+
+      if (!isShoe) {
+        const centerX = (part.x + 0.5) * cellSize;
+        const centerY = (part.y + 0.5) * cellSize;
+        context.fillStyle = "#f7d45b";
+        context.beginPath();
+        context.arc(centerX, centerY, cellSize * 0.085, 0, Math.PI * 2);
+        context.fill();
+      }
+    });
+    drawPersonHead(game.segments[0]);
+  }
+
   function drawCustomCharacter() {
     game.segments.slice(1).forEach((part, bodyIndex) => {
       const isTailTip = bodyIndex === game.segments.length - 2;
@@ -617,6 +677,8 @@
   function drawCharacter() {
     if (selectedCharacter === "custom") {
       drawCustomCharacter();
+    } else if (selectedCharacter === "person") {
+      drawPerson();
     } else if (selectedCharacter === "cheetah") {
       drawCheetah();
     } else if (selectedCharacter === "chicken") {
