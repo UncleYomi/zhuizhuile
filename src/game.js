@@ -28,6 +28,7 @@
   const targetImage = document.querySelector("#target-image");
   const targetName = document.querySelector("#target-name");
   const difficultyButtons = document.querySelectorAll(".difficulty-option");
+  const mapButtons = document.querySelectorAll(".map-option");
   const optionDialog = document.querySelector("#option-dialog");
   const dialogCard = document.querySelector(".dialog-card");
   const dialogTitle = document.querySelector("#dialog-title");
@@ -61,7 +62,31 @@
       Object.freeze({ id: "mouse", name: "老鼠", icon: "🐭" }),
       Object.freeze({ id: "worm", name: "虫子", icon: "🐛" }),
       Object.freeze({ id: "deer", name: "鹿", icon: "🦌" }),
+      Object.freeze({ id: "frog", name: "小青蛙", icon: "🐸" }),
     ]),
+  });
+  const mazeWalls = Object.freeze(
+    [
+      { x: 4, gap: 15 },
+      { x: 8, gap: 5 },
+      { x: 12, gap: 14 },
+      { x: 16, gap: 4 },
+    ].flatMap(({ x, gap }) =>
+      Array.from({ length: 20 }, (_, y) => (y === gap ? null : Object.freeze({ x, y }))).filter(
+        Boolean,
+      ),
+    ),
+  );
+  const mazeLevel = Object.freeze({
+    blockedCells: mazeWalls,
+    startSegments: Object.freeze([
+      Object.freeze({ x: 1, y: 17 }),
+      Object.freeze({ x: 1, y: 18 }),
+      Object.freeze({ x: 1, y: 19 }),
+    ]),
+    startDirection: "up",
+    target: Object.freeze({ x: 18, y: 1 }),
+    winOnTarget: true,
   });
   const customAvatarData = {
     character: customAvatars.get("character"),
@@ -71,6 +96,7 @@
   let selectedCharacter = "snake";
   let selectedTarget = "apple";
   let selectedDifficulty = "easy";
+  let selectedMap = "open";
   let newRecordThisRound = false;
   let activePicker = null;
   let activeTrigger = null;
@@ -116,6 +142,24 @@
     pauseButton.setAttribute("aria-label", paused ? "继续游戏" : "暂停游戏");
     pauseIcon.textContent = paused ? "▶" : "⏸";
     pauseLabel.textContent = paused ? "继续" : "暂停";
+  }
+
+  function setSetupControlsDisabled(disabled) {
+    [...difficultyButtons, ...mapButtons].forEach((button) => {
+      button.disabled = disabled;
+    });
+  }
+
+  function configureGameLevel() {
+    game.configureLevel(selectedMap === "maze" ? mazeLevel : {});
+  }
+
+  function showReadyMessage() {
+    const detail =
+      selectedMap === "maze"
+        ? "从入口出发，穿过迷宫找到出口的目标。"
+        : "抓到目标会变长，注意不要撞墙。";
+    showMessage("准备好了吗？", detail, "开始游戏");
   }
 
   function clearCountdown() {
@@ -191,6 +235,22 @@
       context.moveTo(0, position);
       context.lineTo(logicalCanvasSize, position);
       context.stroke();
+    }
+
+    if (selectedMap === "maze") {
+      mazeWalls.forEach((wall) => {
+        const left = wall.x * cellSize + 1.5;
+        const top = wall.y * cellSize + 1.5;
+        const size = cellSize - 3;
+        context.fillStyle = "#6d8463";
+        context.beginPath();
+        context.roundRect(left, top, size, size, 4);
+        context.fill();
+        context.fillStyle = "rgba(255, 255, 255, 0.18)";
+        context.beginPath();
+        context.arc(left + size * 0.34, top + size * 0.32, size * 0.16, 0, Math.PI * 2);
+        context.fill();
+      });
     }
   }
 
@@ -359,6 +419,44 @@
     context.restore();
   }
 
+  function drawFrog() {
+    if (!game.target) return;
+
+    const centerX = (game.target.x + 0.5) * cellSize;
+    const centerY = (game.target.y + 0.54) * cellSize;
+    const unit = cellSize / 20;
+    context.save();
+    context.translate(centerX, centerY);
+    context.scale(unit, unit);
+
+    context.fillStyle = "#69b94f";
+    context.beginPath();
+    context.arc(-4.6, -4.5, 3.6, 0, Math.PI * 2);
+    context.arc(4.6, -4.5, 3.6, 0, Math.PI * 2);
+    context.ellipse(0, 1.5, 8, 6.6, 0, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#f8fff3";
+    context.beginPath();
+    context.arc(-4.6, -4.7, 2.1, 0, Math.PI * 2);
+    context.arc(4.6, -4.7, 2.1, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#26342f";
+    context.beginPath();
+    context.arc(-4.4, -4.5, 0.85, 0, Math.PI * 2);
+    context.arc(4.4, -4.5, 0.85, 0, Math.PI * 2);
+    context.fill();
+
+    context.strokeStyle = "#285c47";
+    context.lineWidth = 1.1;
+    context.lineCap = "round";
+    context.beginPath();
+    context.arc(0, 1.2, 3.5, 0.2, Math.PI - 0.2);
+    context.stroke();
+    context.restore();
+  }
+
   function drawCustomImage(image, cell, inset = 1) {
     if (!image || !cell) return false;
 
@@ -388,6 +486,8 @@
       drawWorm();
     } else if (selectedTarget === "deer") {
       drawDeer();
+    } else if (selectedTarget === "frog") {
+      drawFrog();
     } else {
       drawApple();
     }
@@ -726,10 +826,25 @@
     startButton.textContent = "再玩一次";
     gameShell.dataset.gameState = "over";
     updatePauseButton({ disabled: true });
-    difficultyButtons.forEach((button) => {
-      button.disabled = false;
-    });
+    setSetupControlsDisabled(false);
     sound.playGameOver();
+  }
+
+  function showMazeWin() {
+    window.clearInterval(timer);
+    timer = null;
+    clearCountdown();
+    const character = selectedOption("character");
+    const target = selectedOption("target");
+    showMessage(
+      "找到出口啦！",
+      `${character.name}穿过迷宫，找到了${target.name}！`,
+      "再玩一次",
+    );
+    startButton.textContent = "再玩一次";
+    gameShell.dataset.gameState = "over";
+    updatePauseButton({ disabled: true });
+    setSetupControlsDisabled(false);
   }
 
   function tick() {
@@ -741,7 +856,9 @@
       sound.playCatch();
     }
 
-    if (result.status === "over") {
+    if (result.status === "won") {
+      showMazeWin();
+    } else if (result.status === "over") {
       showGameOver();
     }
   }
@@ -758,6 +875,7 @@
   function beginGame() {
     clearCountdown();
     window.clearInterval(timer);
+    configureGameLevel();
     game.start();
     newRecordThisRound = false;
     scoreCard.classList.remove("new-record");
@@ -766,9 +884,7 @@
     messageAction.textContent = "重新开始";
     messageAction.hidden = false;
     gameShell.dataset.gameState = "running";
-    difficultyButtons.forEach((button) => {
-      button.disabled = true;
-    });
+    setSetupControlsDisabled(true);
     updatePauseButton();
     render();
     canvas.focus({ preventScroll: true });
@@ -1089,6 +1205,20 @@
       selectedDifficulty = event.currentTarget.dataset.difficulty;
       updatePressedButton(difficultyButtons, event.currentTarget);
       updateBestScoreDisplay();
+    });
+  });
+
+  mapButtons.forEach((button) => {
+    button.addEventListener("click", (event) => {
+      selectedMap = event.currentTarget.dataset.map;
+      updatePressedButton(mapButtons, event.currentTarget);
+      configureGameLevel();
+      game.reset();
+      gameShell.dataset.gameState = "idle";
+      startButton.textContent = "开始游戏";
+      updatePauseButton({ disabled: true });
+      showReadyMessage();
+      render();
     });
   });
 

@@ -29,22 +29,31 @@
     constructor(options = {}) {
       this.gridSize = options.gridSize || 20;
       this.random = options.random || Math.random;
+      this.configureLevel(options.level);
       this.reset();
+    }
+
+    configureLevel(level = {}) {
+      this.blockedCells = (level?.blockedCells || []).map((cell) => ({ ...cell }));
+      this.startSegments = level?.startSegments?.map((cell) => ({ ...cell })) || null;
+      this.startDirection = DIRECTIONS[level?.startDirection] || DIRECTIONS.right;
+      this.fixedTarget = level?.target ? { ...level.target } : null;
+      this.winOnTarget = Boolean(level?.winOnTarget);
     }
 
     reset() {
       const middle = Math.floor(this.gridSize / 2);
-      this.segments = [
-        { x: middle, y: middle },
-        { x: middle - 1, y: middle },
-        { x: middle - 2, y: middle },
-      ];
-      this.direction = DIRECTIONS.right;
-      this.pendingDirection = DIRECTIONS.right;
+      this.segments = this.startSegments?.map((cell) => ({ ...cell })) || [
+          { x: middle, y: middle },
+          { x: middle - 1, y: middle },
+          { x: middle - 2, y: middle },
+        ];
+      this.direction = this.startDirection;
+      this.pendingDirection = this.startDirection;
       this.canTurn = true;
       this.score = 0;
       this.status = "idle";
-      this.target = this.createTarget();
+      this.target = this.fixedTarget ? { ...this.fixedTarget } : this.createTarget();
     }
 
     start() {
@@ -85,7 +94,11 @@
       const reachedTarget = nextHead.x === this.target.x && nextHead.y === this.target.y;
       const bodyToCheck = reachedTarget ? this.segments : this.segments.slice(0, -1);
 
-      if (this.isOutsideBoard(nextHead) || this.occupies(nextHead, bodyToCheck)) {
+      if (
+        this.isOutsideBoard(nextHead) ||
+        this.isBlocked(nextHead) ||
+        this.occupies(nextHead, bodyToCheck)
+      ) {
         this.status = "over";
         return { status: this.status, reachedTarget: false };
       }
@@ -94,7 +107,12 @@
 
       if (reachedTarget) {
         this.score += 1;
-        this.target = this.createTarget();
+        if (this.winOnTarget) {
+          this.status = "won";
+          this.target = null;
+        } else {
+          this.target = this.createTarget();
+        }
       } else {
         this.segments.pop();
       }
@@ -109,7 +127,7 @@
       for (let y = 0; y < this.gridSize; y += 1) {
         for (let x = 0; x < this.gridSize; x += 1) {
           const cell = { x, y };
-          if (!this.occupies(cell, this.segments)) {
+          if (!this.occupies(cell, this.segments) && !this.isBlocked(cell)) {
             freeCells.push(cell);
           }
         }
@@ -125,6 +143,10 @@
 
     occupies(cell, segments) {
       return segments.some((part) => part.x === cell.x && part.y === cell.y);
+    }
+
+    isBlocked(cell) {
+      return this.blockedCells.some((wall) => wall.x === cell.x && wall.y === cell.y);
     }
 
     isOutsideBoard(cell) {

@@ -299,6 +299,7 @@ canvas:focus-visible {
 
 .picker-trigger:focus-visible,
 .difficulty-option:focus-visible,
+.map-option:focus-visible,
 .start-button:focus-visible,
 .message-action:focus-visible,
 .utility-button:focus-visible,
@@ -345,14 +346,22 @@ canvas:focus-visible {
   font-weight: 900;
 }
 
-.difficulty-picker {
+.game-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.difficulty-picker,
+.map-picker {
   min-width: 0;
   margin: 14px 0 0;
   padding: 0;
   border: 0;
 }
 
-.difficulty-picker legend {
+.difficulty-picker legend,
+.map-picker legend {
   width: 100%;
   margin-bottom: 8px;
   color: #496057;
@@ -367,7 +376,14 @@ canvas:focus-visible {
   gap: 8px;
 }
 
-.difficulty-option {
+.map-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.difficulty-option,
+.map-option {
   min-width: 0;
   min-height: 50px;
   padding: 8px;
@@ -381,7 +397,8 @@ canvas:focus-visible {
   transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
 
-.difficulty-option[aria-pressed="true"] {
+.difficulty-option[aria-pressed="true"],
+.map-option[aria-pressed="true"] {
   border-color: #20352d;
   background: #dff0d8;
   color: #20352d;
@@ -389,7 +406,8 @@ canvas:focus-visible {
   transform: translateY(-2px);
 }
 
-.difficulty-option:disabled {
+.difficulty-option:disabled,
+.map-option:disabled {
   cursor: default;
   opacity: 0.58;
 }
@@ -767,20 +785,24 @@ canvas:focus-visible {
     height: 24px;
   }
 
-  .difficulty-picker {
+  .difficulty-picker,
+  .map-picker {
     margin-top: 6px;
   }
 
-  .difficulty-picker legend {
+  .difficulty-picker legend,
+  .map-picker legend {
     margin-bottom: 4px;
     font-size: 11px;
   }
 
-  .difficulty-options {
+  .difficulty-options,
+  .map-options {
     gap: 5px;
   }
 
-  .difficulty-option {
+  .difficulty-option,
+  .map-option {
     min-height: 38px;
     padding: 5px;
     border-radius: 11px;

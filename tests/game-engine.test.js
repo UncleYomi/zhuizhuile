@@ -84,3 +84,44 @@ test("撞到自己的身体后游戏结束", () => {
 
   assert.equal(result.status, "over");
 });
+
+test("迷宫墙会阻挡角色，并且目标不会出现在墙上", () => {
+  const game = new ChaseGame({
+    gridSize: 8,
+    random: () => 0,
+    level: { blockedCells: [{ x: 4, y: 4 }] },
+  });
+  game.start();
+  game.segments = [
+    { x: 3, y: 4 },
+    { x: 2, y: 4 },
+    { x: 1, y: 4 },
+  ];
+
+  assert.equal(game.isBlocked(game.target), false);
+  assert.equal(game.step().status, "over");
+});
+
+test("到达迷宫出口的固定目标后通关", () => {
+  const game = new ChaseGame({
+    gridSize: 8,
+    level: {
+      startSegments: [
+        { x: 2, y: 4 },
+        { x: 1, y: 4 },
+        { x: 0, y: 4 },
+      ],
+      startDirection: "right",
+      target: { x: 3, y: 4 },
+      winOnTarget: true,
+    },
+  });
+  game.start();
+
+  const result = game.step();
+
+  assert.equal(result.reachedTarget, true);
+  assert.equal(result.status, "won");
+  assert.equal(game.score, 1);
+  assert.equal(game.target, null);
+});

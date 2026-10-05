@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="一个可以更换动物和目标的追逐小游戏" />
     <title>动物追追乐</title>
-    <link rel="stylesheet" href="style.css?v=0.9.0" />
+    <link rel="stylesheet" href="style.css?v=0.10.0" />
   </head>
   <body>
     <main class="game-shell" data-game-state="idle">
@@ -107,35 +107,49 @@
             </button>
           </div>
 
-          <fieldset class="difficulty-picker">
-            <legend>选择难度</legend>
-            <div class="difficulty-options" role="group" aria-label="游戏难度">
-              <button
-                class="difficulty-option"
-                type="button"
-                data-difficulty="easy"
-                aria-pressed="true"
-              >
-                简单
-              </button>
-              <button
-                class="difficulty-option"
-                type="button"
-                data-difficulty="medium"
-                aria-pressed="false"
-              >
-                中等
-              </button>
-              <button
-                class="difficulty-option"
-                type="button"
-                data-difficulty="hard"
-                aria-pressed="false"
-              >
-                困难
-              </button>
-            </div>
-          </fieldset>
+          <div class="game-settings">
+            <fieldset class="difficulty-picker">
+              <legend>选择难度</legend>
+              <div class="difficulty-options" role="group" aria-label="游戏难度">
+                <button
+                  class="difficulty-option"
+                  type="button"
+                  data-difficulty="easy"
+                  aria-pressed="true"
+                >
+                  简单
+                </button>
+                <button
+                  class="difficulty-option"
+                  type="button"
+                  data-difficulty="medium"
+                  aria-pressed="false"
+                >
+                  中等
+                </button>
+                <button
+                  class="difficulty-option"
+                  type="button"
+                  data-difficulty="hard"
+                  aria-pressed="false"
+                >
+                  困难
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="map-picker">
+              <legend>选择地图</legend>
+              <div class="map-options" role="group" aria-label="游戏地图">
+                <button class="map-option" type="button" data-map="open" aria-pressed="true">
+                  开阔
+                </button>
+                <button class="map-option" type="button" data-map="maze" aria-pressed="false">
+                  迷宫
+                </button>
+              </div>
+            </fieldset>
+          </div>
 
           <button id="start-button" class="start-button" type="button">开始游戏</button>
           <p class="instructions">
@@ -166,9 +180,9 @@
       </div>
     </dialog>
 
-    <script src="src/game-engine.js?v=0.9.0"></script>
-    <script src="src/sound.js?v=0.9.0"></script>
-    <script src="src/player-data.js?v=0.9.0"></script>
-    <script src="src/game.js?v=0.9.0"></script>
+    <script src="src/game-engine.js?v=0.10.0"></script>
+    <script src="src/sound.js?v=0.10.0"></script>
+    <script src="src/player-data.js?v=0.10.0"></script>
+    <script src="src/game.js?v=0.10.0"></script>
   </body>
 </html>
