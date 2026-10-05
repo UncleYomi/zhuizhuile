@@ -1,6 +1,14 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { ChaseGame } = require("../src/game-engine.js");
+const { ChaseGame, directionFromSwipe } = require("../src/game-engine.js");
+
+test("滑动距离和主要方向会转换成游戏方向", () => {
+  assert.equal(directionFromSwipe(60, 12), "right");
+  assert.equal(directionFromSwipe(-50, 8), "left");
+  assert.equal(directionFromSwipe(9, -48), "up");
+  assert.equal(directionFromSwipe(-10, 55), "down");
+  assert.equal(directionFromSwipe(12, 10), null);
+});
 
 test("开始游戏后角色向右移动一格", () => {
   const game = new ChaseGame({ gridSize: 10, random: () => 0 });

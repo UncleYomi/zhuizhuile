@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="一个可以更换动物和目标的追逐小游戏" />
     <title>动物追追乐</title>
-    <link rel="stylesheet" href="style.css?v=0.4.2" />
+    <link rel="stylesheet" href="style.css?v=0.5.0" />
   </head>
   <body>
-    <main class="game-shell">
+    <main class="game-shell" data-game-state="idle">
       <header class="game-header">
         <div>
           <p class="eyebrow">我们一起做的小游戏</p>
@@ -30,7 +30,11 @@
           ></canvas>
           <div id="game-message" class="game-message" aria-hidden="false">
             <p id="message-title" class="message-title">准备好了吗？</p>
-            <p id="message-detail">抓到目标会变长，注意不要撞墙。</p>
+            <p id="message-detail">
+              <span class="keyboard-copy">抓到目标会变长，注意不要撞墙。</span>
+              <span class="touch-copy">在游戏区域滑动控制方向。</span>
+            </p>
+            <button id="message-action" class="message-action" type="button">开始游戏</button>
           </div>
         </div>
 
@@ -100,7 +104,10 @@
           </fieldset>
 
           <button id="start-button" class="start-button" type="button">开始游戏</button>
-          <p class="instructions">使用键盘的上下左右键控制方向</p>
+          <p class="instructions">
+            <span class="keyboard-copy">使用键盘的上下左右键控制方向</span>
+            <span class="touch-copy">在游戏区域向上下左右滑动</span>
+          </p>
         </div>
       </section>
     </main>
@@ -117,7 +124,7 @@
       </div>
     </dialog>
 
-    <script src="src/game-engine.js?v=0.4.2"></script>
-    <script src="src/game.js?v=0.4.2"></script>
+    <script src="src/game-engine.js?v=0.5.0"></script>
+    <script src="src/game.js?v=0.5.0"></script>
   </body>
 </html>

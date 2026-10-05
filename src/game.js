@@ -1,9 +1,12 @@
 (function startAnimalChaseGame() {
-  const { ChaseGame } = window.ChaseGameEngine;
+  const { ChaseGame, directionFromSwipe } = window.ChaseGameEngine;
+  const gameShell = document.querySelector(".game-shell");
   const canvas = document.querySelector("#game-canvas");
+  const canvasWrap = document.querySelector(".canvas-wrap");
   const context = canvas.getContext("2d");
   const scoreElement = document.querySelector("#score");
   const startButton = document.querySelector("#start-button");
+  const messageAction = document.querySelector("#message-action");
   const message = document.querySelector("#game-message");
   const messageTitle = document.querySelector("#message-title");
   const messageDetail = document.querySelector("#message-detail");
@@ -44,6 +47,7 @@
   let activeTrigger = null;
   let resumeAfterPicker = false;
   let timer = null;
+  let swipeStart = null;
 
   const keyDirections = {
     ArrowUp: "up",
@@ -304,6 +308,8 @@
     message.classList.remove("hidden");
     message.setAttribute("aria-hidden", "false");
     startButton.textContent = "再玩一次";
+    messageAction.textContent = "再玩一次";
+    gameShell.dataset.gameState = "over";
   }
 
   function tick() {
@@ -325,8 +331,52 @@
     message.classList.add("hidden");
     message.setAttribute("aria-hidden", "true");
     startButton.textContent = "重新开始";
+    messageAction.textContent = "重新开始";
+    gameShell.dataset.gameState = "running";
     render();
     scheduleTicks();
+  }
+
+  function beginSwipe(event) {
+    if (event.pointerType === "mouse" || game.status !== "running" || optionDialog.open) {
+      return;
+    }
+
+    swipeStart = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    canvasWrap.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }
+
+  function trackSwipe(event) {
+    if (!swipeStart || swipeStart.pointerId !== event.pointerId) return;
+    event.preventDefault();
+  }
+
+  function finishSwipe(event) {
+    if (!swipeStart || swipeStart.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - swipeStart.x;
+    const deltaY = event.clientY - swipeStart.y;
+    const boardSize = canvasWrap.getBoundingClientRect().width;
+    const minimumDistance = Math.max(18, Math.min(30, boardSize * 0.07));
+    const direction = directionFromSwipe(deltaX, deltaY, minimumDistance);
+    swipeStart = null;
+
+    if (direction) {
+      game.queueDirection(direction);
+    }
+
+    event.preventDefault();
+  }
+
+  function cancelSwipe(event) {
+    if (swipeStart?.pointerId === event.pointerId) {
+      swipeStart = null;
+    }
   }
 
   function updatePressedButton(buttons, selectedButton) {
@@ -416,6 +466,7 @@
   }
 
   startButton.addEventListener("click", beginGame);
+  messageAction.addEventListener("click", beginGame);
   characterPicker.addEventListener("click", () => openPicker("character", characterPicker));
   targetPicker.addEventListener("click", () => openPicker("target", targetPicker));
   dialogClose.addEventListener("click", closePicker);
@@ -453,6 +504,11 @@
     event.preventDefault();
     game.queueDirection(direction);
   });
+
+  canvasWrap.addEventListener("pointerdown", beginSwipe);
+  canvasWrap.addEventListener("pointermove", trackSwipe, { passive: false });
+  canvasWrap.addEventListener("pointerup", finishSwipe);
+  canvasWrap.addEventListener("pointercancel", cancelSwipe);
 
   updatePickerTriggers();
   resizeCanvas();

@@ -6,6 +6,25 @@
     right: Object.freeze({ x: 1, y: 0 }),
   });
 
+  function directionFromSwipe(deltaX, deltaY, minimumDistance = 24) {
+    if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY)) {
+      return null;
+    }
+
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (Math.max(horizontalDistance, verticalDistance) < minimumDistance) {
+      return null;
+    }
+
+    if (horizontalDistance >= verticalDistance) {
+      return deltaX >= 0 ? "right" : "left";
+    }
+
+    return deltaY >= 0 ? "down" : "up";
+  }
+
   class ChaseGame {
     constructor(options = {}) {
       this.gridSize = options.gridSize || 20;
@@ -113,7 +132,7 @@
     }
   }
 
-  const exported = { ChaseGame, DIRECTIONS };
+  const exported = { ChaseGame, DIRECTIONS, directionFromSwipe };
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = exported;
