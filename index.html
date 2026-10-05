@@ -5,18 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="一个可以更换动物和目标的追逐小游戏" />
     <title>动物追追乐</title>
-    <link rel="stylesheet" href="style.css?v=0.5.0" />
+    <link rel="stylesheet" href="style.css?v=0.6.0" />
   </head>
   <body>
     <main class="game-shell" data-game-state="idle">
       <header class="game-header">
-        <div>
+        <div class="title-block">
           <p class="eyebrow">我们一起做的小游戏</p>
           <h1>动物追追乐</h1>
         </div>
-        <div class="score-card" aria-live="polite">
-          <span>得分</span>
-          <strong id="score">0</strong>
+        <div class="game-status">
+          <div class="quick-controls" aria-label="游戏快捷控制">
+            <button
+              id="sound-button"
+              class="utility-button"
+              type="button"
+              aria-pressed="true"
+              aria-label="关闭音效"
+            >
+              <span id="sound-icon" aria-hidden="true">🔊</span>
+              <span class="control-label">音效</span>
+            </button>
+            <button
+              id="pause-button"
+              class="utility-button"
+              type="button"
+              aria-label="暂停游戏"
+              disabled
+            >
+              <span id="pause-icon" aria-hidden="true">⏸</span>
+              <span id="pause-label" class="control-label">暂停</span>
+            </button>
+          </div>
+          <div class="score-card" aria-live="polite">
+            <span>得分</span>
+            <strong id="score">0</strong>
+          </div>
         </div>
       </header>
 
@@ -26,6 +50,7 @@
             id="game-canvas"
             width="400"
             height="400"
+            tabindex="0"
             aria-label="动物追追乐游戏地图"
           ></canvas>
           <div id="game-message" class="game-message" aria-hidden="false">
@@ -124,7 +149,8 @@
       </div>
     </dialog>
 
-    <script src="src/game-engine.js?v=0.5.0"></script>
-    <script src="src/game.js?v=0.5.0"></script>
+    <script src="src/game-engine.js?v=0.6.0"></script>
+    <script src="src/sound.js?v=0.6.0"></script>
+    <script src="src/game.js?v=0.6.0"></script>
   </body>
 </html>

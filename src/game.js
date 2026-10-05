@@ -1,10 +1,16 @@
 (function startAnimalChaseGame() {
   const { ChaseGame, directionFromSwipe } = window.ChaseGameEngine;
+  const { SoundController } = window.AnimalChaseSound;
   const gameShell = document.querySelector(".game-shell");
   const canvas = document.querySelector("#game-canvas");
   const canvasWrap = document.querySelector(".canvas-wrap");
   const context = canvas.getContext("2d");
   const scoreElement = document.querySelector("#score");
+  const soundButton = document.querySelector("#sound-button");
+  const soundIcon = document.querySelector("#sound-icon");
+  const pauseButton = document.querySelector("#pause-button");
+  const pauseIcon = document.querySelector("#pause-icon");
+  const pauseLabel = document.querySelector("#pause-label");
   const startButton = document.querySelector("#start-button");
   const messageAction = document.querySelector("#message-action");
   const message = document.querySelector("#game-message");
@@ -23,6 +29,7 @@
   const dialogOptions = document.querySelector("#dialog-options");
   const dialogClose = document.querySelector("#dialog-close");
   const game = new ChaseGame({ gridSize: 20 });
+  const sound = new SoundController();
   const logicalCanvasSize = 400;
   const cellSize = logicalCanvasSize / game.gridSize;
   const difficultySettings = Object.freeze({
@@ -47,6 +54,7 @@
   let activeTrigger = null;
   let resumeAfterPicker = false;
   let timer = null;
+  let countdownTimer = null;
   let swipeStart = null;
 
   const keyDirections = {
@@ -55,6 +63,43 @@
     ArrowLeft: "left",
     ArrowRight: "right",
   };
+
+  function currentGameState() {
+    return gameShell.dataset.gameState;
+  }
+
+  function showMessage(title, detail, actionLabel) {
+    messageTitle.textContent = title;
+    messageDetail.textContent = detail;
+    messageAction.textContent = actionLabel;
+    messageAction.hidden = false;
+    message.classList.remove("hidden");
+    message.setAttribute("aria-hidden", "false");
+  }
+
+  function hideMessage() {
+    message.classList.add("hidden");
+    message.setAttribute("aria-hidden", "true");
+  }
+
+  function updateSoundButton() {
+    const enabled = sound.isEnabled();
+    soundButton.setAttribute("aria-pressed", String(enabled));
+    soundButton.setAttribute("aria-label", enabled ? "关闭音效" : "开启音效");
+    soundIcon.textContent = enabled ? "🔊" : "🔇";
+  }
+
+  function updatePauseButton({ paused = false, disabled = false } = {}) {
+    pauseButton.disabled = disabled;
+    pauseButton.setAttribute("aria-label", paused ? "继续游戏" : "暂停游戏");
+    pauseIcon.textContent = paused ? "▶" : "⏸";
+    pauseLabel.textContent = paused ? "继续" : "暂停";
+  }
+
+  function clearCountdown() {
+    window.clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
 
   function selectedOption(type) {
     const selectedId = type === "character" ? selectedCharacter : selectedTarget;
@@ -301,20 +346,27 @@
   function showGameOver() {
     window.clearInterval(timer);
     timer = null;
+    clearCountdown();
     const character = selectedOption("character");
     const target = selectedOption("target");
-    messageTitle.textContent = "游戏结束";
-    messageDetail.textContent = `${character.name}抓到了 ${game.score} 个${target.name}，再试一次吧！`;
-    message.classList.remove("hidden");
-    message.setAttribute("aria-hidden", "false");
+    showMessage(
+      "游戏结束",
+      `${character.name}抓到了 ${game.score} 个${target.name}，再试一次吧！`,
+      "再玩一次",
+    );
     startButton.textContent = "再玩一次";
-    messageAction.textContent = "再玩一次";
     gameShell.dataset.gameState = "over";
+    updatePauseButton({ disabled: true });
+    sound.playGameOver();
   }
 
   function tick() {
     const result = game.step();
     render();
+
+    if (result.reachedTarget) {
+      sound.playCatch();
+    }
 
     if (result.status === "over") {
       showGameOver();
@@ -323,22 +375,103 @@
 
   function scheduleTicks() {
     window.clearInterval(timer);
+    if (currentGameState() !== "running") {
+      timer = null;
+      return;
+    }
     timer = window.setInterval(tick, difficultySettings[selectedDifficulty]);
   }
 
   function beginGame() {
+    clearCountdown();
+    window.clearInterval(timer);
     game.start();
-    message.classList.add("hidden");
-    message.setAttribute("aria-hidden", "true");
+    hideMessage();
     startButton.textContent = "重新开始";
     messageAction.textContent = "重新开始";
+    messageAction.hidden = false;
     gameShell.dataset.gameState = "running";
+    updatePauseButton();
     render();
+    canvas.focus({ preventScroll: true });
+    sound.playStart();
     scheduleTicks();
   }
 
+  function pauseGame({ automatic = false } = {}) {
+    if (game.status !== "running") return false;
+
+    window.clearInterval(timer);
+    timer = null;
+    clearCountdown();
+    swipeStart = null;
+    resumeAfterPicker = false;
+    gameShell.dataset.gameState = "paused";
+    showMessage(
+      "游戏已暂停",
+      automatic ? "回到游戏后，点击继续再出发。" : `当前得分是 ${game.score}，准备好再继续。`,
+      "继续游戏",
+    );
+    updatePauseButton({ paused: true });
+    return true;
+  }
+
+  function resumeGame() {
+    if (game.status !== "running") return;
+
+    clearCountdown();
+    hideMessage();
+    gameShell.dataset.gameState = "running";
+    updatePauseButton();
+    canvas.focus({ preventScroll: true });
+    sound.playResume();
+    scheduleTicks();
+  }
+
+  function beginResumeCountdown() {
+    if (currentGameState() !== "paused" || optionDialog.open) return;
+
+    let remaining = 3;
+    gameShell.dataset.gameState = "countdown";
+    messageTitle.textContent = String(remaining);
+    messageDetail.textContent = "准备继续……";
+    messageAction.hidden = true;
+    updatePauseButton({ disabled: true });
+    clearCountdown();
+    countdownTimer = window.setInterval(() => {
+      remaining -= 1;
+      if (remaining > 0) {
+        messageTitle.textContent = String(remaining);
+        return;
+      }
+
+      resumeGame();
+    }, 500);
+  }
+
+  function togglePause() {
+    if (currentGameState() === "running") {
+      pauseGame();
+    } else if (currentGameState() === "paused") {
+      beginResumeCountdown();
+    }
+  }
+
+  function handleMessageAction() {
+    if (currentGameState() === "paused") {
+      beginResumeCountdown();
+    } else {
+      beginGame();
+    }
+  }
+
   function beginSwipe(event) {
-    if (event.pointerType === "mouse" || game.status !== "running" || optionDialog.open) {
+    if (
+      event.pointerType === "mouse" ||
+      game.status !== "running" ||
+      currentGameState() !== "running" ||
+      optionDialog.open
+    ) {
       return;
     }
 
@@ -431,7 +564,8 @@
   function openPicker(type, trigger) {
     activePicker = type;
     activeTrigger = trigger;
-    resumeAfterPicker = game.status === "running" && timer !== null;
+    resumeAfterPicker =
+      game.status === "running" && currentGameState() === "running" && timer !== null;
 
     if (resumeAfterPicker) {
       window.clearInterval(timer);
@@ -454,7 +588,12 @@
   function finishPicker() {
     if (!activePicker) return;
 
-    if (resumeAfterPicker && game.status === "running") {
+    if (
+      resumeAfterPicker &&
+      game.status === "running" &&
+      currentGameState() === "running" &&
+      !document.hidden
+    ) {
       scheduleTicks();
     }
 
@@ -466,7 +605,12 @@
   }
 
   startButton.addEventListener("click", beginGame);
-  messageAction.addEventListener("click", beginGame);
+  messageAction.addEventListener("click", handleMessageAction);
+  soundButton.addEventListener("click", () => {
+    sound.toggle();
+    updateSoundButton();
+  });
+  pauseButton.addEventListener("click", togglePause);
   characterPicker.addEventListener("click", () => openPicker("character", characterPicker));
   targetPicker.addEventListener("click", () => openPicker("target", targetPicker));
   dialogClose.addEventListener("click", closePicker);
@@ -498,8 +642,28 @@
   });
 
   document.addEventListener("keydown", (event) => {
+    const interactiveTarget = event.target.closest?.("button, input, select, textarea, dialog");
+
+    if (
+      event.code === "Space" &&
+      !interactiveTarget &&
+      !optionDialog.open &&
+      ["running", "paused"].includes(currentGameState())
+    ) {
+      event.preventDefault();
+      togglePause();
+      return;
+    }
+
     const direction = keyDirections[event.key];
-    if (!direction || game.status !== "running" || optionDialog.open) return;
+    if (
+      !direction ||
+      game.status !== "running" ||
+      currentGameState() !== "running" ||
+      optionDialog.open
+    ) {
+      return;
+    }
 
     event.preventDefault();
     game.queueDirection(direction);
@@ -510,6 +674,14 @@
   canvasWrap.addEventListener("pointerup", finishSwipe);
   canvasWrap.addEventListener("pointercancel", cancelSwipe);
 
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && ["running", "countdown"].includes(currentGameState())) {
+      pauseGame({ automatic: true });
+    }
+  });
+
+  updateSoundButton();
+  updatePauseButton({ disabled: true });
   updatePickerTriggers();
   resizeCanvas();
 
