@@ -1,4 +1,4 @@
-(function attachSnakeEngine(globalObject) {
+(function attachChaseEngine(globalObject) {
   const DIRECTIONS = Object.freeze({
     up: Object.freeze({ x: 0, y: -1 }),
     down: Object.freeze({ x: 0, y: 1 }),
@@ -6,7 +6,7 @@
     right: Object.freeze({ x: 1, y: 0 }),
   });
 
-  class SnakeGame {
+  class ChaseGame {
     constructor(options = {}) {
       this.gridSize = options.gridSize || 20;
       this.random = options.random || Math.random;
@@ -15,7 +15,7 @@
 
     reset() {
       const middle = Math.floor(this.gridSize / 2);
-      this.snake = [
+      this.segments = [
         { x: middle, y: middle },
         { x: middle - 1, y: middle },
         { x: middle - 2, y: middle },
@@ -25,7 +25,7 @@
       this.canTurn = true;
       this.score = 0;
       this.status = "idle";
-      this.food = this.createFood();
+      this.target = this.createTarget();
     }
 
     start() {
@@ -54,43 +54,43 @@
 
     step() {
       if (this.status !== "running") {
-        return { status: this.status, ateFood: false };
+        return { status: this.status, reachedTarget: false };
       }
 
       this.direction = this.pendingDirection;
-      const currentHead = this.snake[0];
+      const currentHead = this.segments[0];
       const nextHead = {
         x: currentHead.x + this.direction.x,
         y: currentHead.y + this.direction.y,
       };
-      const ateFood = nextHead.x === this.food.x && nextHead.y === this.food.y;
-      const bodyToCheck = ateFood ? this.snake : this.snake.slice(0, -1);
+      const reachedTarget = nextHead.x === this.target.x && nextHead.y === this.target.y;
+      const bodyToCheck = reachedTarget ? this.segments : this.segments.slice(0, -1);
 
       if (this.isOutsideBoard(nextHead) || this.occupies(nextHead, bodyToCheck)) {
         this.status = "over";
-        return { status: this.status, ateFood: false };
+        return { status: this.status, reachedTarget: false };
       }
 
-      this.snake.unshift(nextHead);
+      this.segments.unshift(nextHead);
 
-      if (ateFood) {
+      if (reachedTarget) {
         this.score += 1;
-        this.food = this.createFood();
+        this.target = this.createTarget();
       } else {
-        this.snake.pop();
+        this.segments.pop();
       }
 
       this.canTurn = true;
-      return { status: this.status, ateFood };
+      return { status: this.status, reachedTarget };
     }
 
-    createFood() {
+    createTarget() {
       const freeCells = [];
 
       for (let y = 0; y < this.gridSize; y += 1) {
         for (let x = 0; x < this.gridSize; x += 1) {
           const cell = { x, y };
-          if (!this.occupies(cell, this.snake)) {
+          if (!this.occupies(cell, this.segments)) {
             freeCells.push(cell);
           }
         }
@@ -104,8 +104,8 @@
       return freeCells[Math.floor(this.random() * freeCells.length)];
     }
 
-    occupies(cell, snakeParts) {
-      return snakeParts.some((part) => part.x === cell.x && part.y === cell.y);
+    occupies(cell, segments) {
+      return segments.some((part) => part.x === cell.x && part.y === cell.y);
     }
 
     isOutsideBoard(cell) {
@@ -113,11 +113,11 @@
     }
   }
 
-  const exported = { SnakeGame, DIRECTIONS };
+  const exported = { ChaseGame, DIRECTIONS };
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = exported;
   } else {
-    globalObject.SnakeGameEngine = exported;
+    globalObject.ChaseGameEngine = exported;
   }
 })(typeof window !== "undefined" ? window : globalThis);

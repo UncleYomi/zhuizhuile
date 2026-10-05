@@ -132,9 +132,75 @@ canvas {
   line-height: 1.6;
 }
 
+.customization-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.choice-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choice-picker legend {
+  width: 100%;
+  margin-bottom: 8px;
+  color: #496057;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.choice-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.choice-option {
+  min-width: 0;
+  min-height: 66px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px;
+  border: 2px solid #9aac9f;
+  border-radius: 14px;
+  background: #f7f4ec;
+  color: #496057;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.option-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.choice-option[aria-pressed="true"] {
+  border-color: #20352d;
+  background: #dff0d8;
+  color: #20352d;
+  box-shadow: 0 3px 0 #20352d;
+  transform: translateY(-2px);
+}
+
+.choice-option:focus-visible {
+  outline: 4px solid rgba(45, 114, 86, 0.3);
+  outline-offset: 2px;
+}
+
 .difficulty-picker {
   min-width: 0;
-  margin: 16px 0 0;
+  margin: 14px 0 0;
   padding: 0;
   border: 0;
 }

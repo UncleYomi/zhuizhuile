@@ -1,20 +1,20 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { SnakeGame } = require("../src/game-engine.js");
+const { ChaseGame } = require("../src/game-engine.js");
 
-test("开始游戏后蛇向右移动一格", () => {
-  const game = new SnakeGame({ gridSize: 10, random: () => 0 });
+test("开始游戏后角色向右移动一格", () => {
+  const game = new ChaseGame({ gridSize: 10, random: () => 0 });
   game.start();
-  const oldHead = { ...game.snake[0] };
+  const oldHead = { ...game.segments[0] };
 
   game.step();
 
-  assert.deepEqual(game.snake[0], { x: oldHead.x + 1, y: oldHead.y });
+  assert.deepEqual(game.segments[0], { x: oldHead.x + 1, y: oldHead.y });
   assert.equal(game.score, 0);
 });
 
 test("不能直接反向，也不能在同一步中连续转向", () => {
-  const game = new SnakeGame({ gridSize: 10 });
+  const game = new ChaseGame({ gridSize: 10 });
   game.start();
 
   assert.equal(game.queueDirection("left"), false);
@@ -24,29 +24,29 @@ test("不能直接反向，也不能在同一步中连续转向", () => {
   assert.equal(game.queueDirection("left"), true);
 });
 
-test("吃到食物后增加长度和分数", () => {
-  const game = new SnakeGame({ gridSize: 10, random: () => 0 });
+test("抓到目标后增加长度和分数", () => {
+  const game = new ChaseGame({ gridSize: 10, random: () => 0 });
   game.start();
-  const originalLength = game.snake.length;
-  game.food = { x: game.snake[0].x + 1, y: game.snake[0].y };
+  const originalLength = game.segments.length;
+  game.target = { x: game.segments[0].x + 1, y: game.segments[0].y };
 
   const result = game.step();
 
-  assert.equal(result.ateFood, true);
-  assert.equal(game.snake.length, originalLength + 1);
+  assert.equal(result.reachedTarget, true);
+  assert.equal(game.segments.length, originalLength + 1);
   assert.equal(game.score, 1);
 });
 
-test("食物不会生成在蛇身上", () => {
-  const game = new SnakeGame({ gridSize: 10, random: () => 0 });
+test("目标不会生成在角色轨迹上", () => {
+  const game = new ChaseGame({ gridSize: 10, random: () => 0 });
 
-  assert.equal(game.occupies(game.food, game.snake), false);
+  assert.equal(game.occupies(game.target, game.segments), false);
 });
 
 test("撞墙后游戏结束", () => {
-  const game = new SnakeGame({ gridSize: 5 });
+  const game = new ChaseGame({ gridSize: 5 });
   game.start();
-  game.snake = [
+  game.segments = [
     { x: 4, y: 2 },
     { x: 3, y: 2 },
     { x: 2, y: 2 },
@@ -59,9 +59,9 @@ test("撞墙后游戏结束", () => {
 });
 
 test("撞到自己的身体后游戏结束", () => {
-  const game = new SnakeGame({ gridSize: 8 });
+  const game = new ChaseGame({ gridSize: 8 });
   game.start();
-  game.snake = [
+  game.segments = [
     { x: 3, y: 3 },
     { x: 3, y: 2 },
     { x: 2, y: 2 },
