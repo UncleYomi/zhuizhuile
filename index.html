@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="一个可以更换动物和目标的追逐小游戏" />
     <title>动物追追乐</title>
-    <link rel="stylesheet" href="style.css?v=0.6.0" />
+    <link rel="stylesheet" href="style.css?v=0.7.0" />
   </head>
   <body>
     <main class="game-shell" data-game-state="idle">
@@ -38,8 +38,15 @@
             </button>
           </div>
           <div class="score-card" aria-live="polite">
-            <span>得分</span>
-            <strong id="score">0</strong>
+            <span class="score-value">
+              <small>本局</small>
+              <strong id="score">0</strong>
+            </span>
+            <span class="score-divider" aria-hidden="true"></span>
+            <span class="score-value">
+              <small>最高</small>
+              <strong id="best-score">0</strong>
+            </span>
           </div>
         </div>
       </header>
@@ -76,6 +83,7 @@
               <span class="picker-label">选择主角</span>
               <span class="picker-current">
                 <span id="character-icon" class="picker-icon" aria-hidden="true">🐍</span>
+                <img id="character-image" class="picker-image" alt="" hidden />
                 <strong id="character-name">小蛇</strong>
               </span>
               <span class="picker-action">更换</span>
@@ -92,6 +100,7 @@
               <span class="picker-label">选择目标</span>
               <span class="picker-current">
                 <span id="target-icon" class="picker-icon" aria-hidden="true">🍎</span>
+                <img id="target-image" class="picker-image" alt="" hidden />
                 <strong id="target-name">苹果</strong>
               </span>
               <span class="picker-action">更换</span>
@@ -146,11 +155,20 @@
           </button>
         </header>
         <div id="dialog-options" class="dialog-options"></div>
+        <div class="custom-upload">
+          <button id="custom-upload-button" class="custom-upload-button" type="button">
+            ＋ 添加自定义主角
+          </button>
+          <p id="custom-upload-help">图片只保存在当前设备，不会上传。</p>
+          <p id="custom-upload-status" class="custom-upload-status" role="status"></p>
+          <input id="custom-file-input" type="file" accept="image/*" hidden />
+        </div>
       </div>
     </dialog>
 
-    <script src="src/game-engine.js?v=0.6.0"></script>
-    <script src="src/sound.js?v=0.6.0"></script>
-    <script src="src/game.js?v=0.6.0"></script>
+    <script src="src/game-engine.js?v=0.7.0"></script>
+    <script src="src/sound.js?v=0.7.0"></script>
+    <script src="src/player-data.js?v=0.7.0"></script>
+    <script src="src/game.js?v=0.7.0"></script>
   </body>
 </html>

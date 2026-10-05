@@ -1,11 +1,14 @@
 (function startAnimalChaseGame() {
   const { ChaseGame, directionFromSwipe } = window.ChaseGameEngine;
   const { SoundController } = window.AnimalChaseSound;
+  const { BestScoreStore, CustomAvatarStore, prepareAvatar } = window.AnimalChasePlayerData;
   const gameShell = document.querySelector(".game-shell");
   const canvas = document.querySelector("#game-canvas");
   const canvasWrap = document.querySelector(".canvas-wrap");
   const context = canvas.getContext("2d");
   const scoreElement = document.querySelector("#score");
+  const bestScoreElement = document.querySelector("#best-score");
+  const scoreCard = document.querySelector(".score-card");
   const soundButton = document.querySelector("#sound-button");
   const soundIcon = document.querySelector("#sound-icon");
   const pauseButton = document.querySelector("#pause-button");
@@ -19,8 +22,10 @@
   const characterPicker = document.querySelector("#character-picker");
   const targetPicker = document.querySelector("#target-picker");
   const characterIcon = document.querySelector("#character-icon");
+  const characterImage = document.querySelector("#character-image");
   const characterName = document.querySelector("#character-name");
   const targetIcon = document.querySelector("#target-icon");
+  const targetImage = document.querySelector("#target-image");
   const targetName = document.querySelector("#target-name");
   const difficultyButtons = document.querySelectorAll(".difficulty-option");
   const optionDialog = document.querySelector("#option-dialog");
@@ -28,8 +33,14 @@
   const dialogTitle = document.querySelector("#dialog-title");
   const dialogOptions = document.querySelector("#dialog-options");
   const dialogClose = document.querySelector("#dialog-close");
+  const customUploadButton = document.querySelector("#custom-upload-button");
+  const customUploadHelp = document.querySelector("#custom-upload-help");
+  const customUploadStatus = document.querySelector("#custom-upload-status");
+  const customFileInput = document.querySelector("#custom-file-input");
   const game = new ChaseGame({ gridSize: 20 });
   const sound = new SoundController();
+  const bestScores = new BestScoreStore();
+  const customAvatars = new CustomAvatarStore();
   const logicalCanvasSize = 400;
   const cellSize = logicalCanvasSize / game.gridSize;
   const difficultySettings = Object.freeze({
@@ -41,15 +52,23 @@
     character: Object.freeze([
       Object.freeze({ id: "snake", name: "小蛇", icon: "🐍" }),
       Object.freeze({ id: "cat", name: "小猫", icon: "🐱" }),
+      Object.freeze({ id: "chicken", name: "小鸡", icon: "🐥" }),
     ]),
     target: Object.freeze([
       Object.freeze({ id: "apple", name: "苹果", icon: "🍎" }),
       Object.freeze({ id: "mouse", name: "老鼠", icon: "🐭" }),
+      Object.freeze({ id: "worm", name: "虫子", icon: "🐛" }),
     ]),
   });
+  const customAvatarData = {
+    character: customAvatars.get("character"),
+    target: customAvatars.get("target"),
+  };
+  const customAvatarImages = { character: null, target: null };
   let selectedCharacter = "snake";
   let selectedTarget = "apple";
   let selectedDifficulty = "easy";
+  let newRecordThisRound = false;
   let activePicker = null;
   let activeTrigger = null;
   let resumeAfterPicker = false;
@@ -103,7 +122,53 @@
 
   function selectedOption(type) {
     const selectedId = type === "character" ? selectedCharacter : selectedTarget;
+    if (selectedId === "custom") {
+      return {
+        id: "custom",
+        name: type === "character" ? "我的主角" : "我的目标",
+        icon: "",
+        imageData: customAvatarData[type],
+      };
+    }
     return optionCatalog[type].find((option) => option.id === selectedId);
+  }
+
+  function loadCustomAvatar(type, dataUrl) {
+    if (!dataUrl) {
+      customAvatarImages[type] = null;
+      return Promise.resolve(false);
+    }
+
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        customAvatarImages[type] = image;
+        updatePickerTriggers();
+        render();
+        resolve(true);
+      };
+      image.onerror = () => {
+        customAvatarImages[type] = null;
+        resolve(false);
+      };
+      image.src = dataUrl;
+    });
+  }
+
+  function updateBestScoreDisplay() {
+    bestScoreElement.textContent = String(bestScores.get(selectedDifficulty));
+  }
+
+  function recordBestScore() {
+    const result = bestScores.record(selectedDifficulty, game.score);
+    bestScoreElement.textContent = String(result.best);
+
+    if (result.isNew) {
+      newRecordThisRound = true;
+      scoreCard.classList.remove("new-record");
+      void scoreCard.offsetWidth;
+      scoreCard.classList.add("new-record");
+    }
   }
 
   function drawBoard() {
@@ -204,9 +269,63 @@
     context.restore();
   }
 
+  function drawWorm() {
+    if (!game.target) return;
+
+    const centerX = (game.target.x + 0.5) * cellSize;
+    const centerY = (game.target.y + 0.5) * cellSize;
+    const unit = cellSize / 20;
+    context.save();
+    context.translate(centerX, centerY);
+    context.scale(unit, unit);
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.strokeStyle = "#79a84b";
+    context.lineWidth = 5.2;
+    context.beginPath();
+    context.moveTo(-7, 4);
+    context.bezierCurveTo(-4, -5, 1, 7, 6, -2);
+    context.stroke();
+
+    context.fillStyle = "#99c764";
+    context.beginPath();
+    context.arc(6, -2, 3.6, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#26342f";
+    context.beginPath();
+    context.arc(7.2, -3, 0.65, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
+  function drawCustomImage(image, cell, inset = 1) {
+    if (!image || !cell) return false;
+
+    const left = cell.x * cellSize + inset;
+    const top = cell.y * cellSize + inset;
+    const size = cellSize - inset * 2;
+    context.save();
+    context.beginPath();
+    context.arc(left + size / 2, top + size / 2, size / 2, 0, Math.PI * 2);
+    context.clip();
+    context.drawImage(image, left, top, size, size);
+    context.restore();
+    context.strokeStyle = "rgba(32, 53, 45, 0.45)";
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.arc(left + size / 2, top + size / 2, size / 2 - 0.75, 0, Math.PI * 2);
+    context.stroke();
+    return true;
+  }
+
   function drawTarget() {
-    if (selectedTarget === "mouse") {
+    if (selectedTarget === "custom") {
+      drawCustomImage(customAvatarImages.target, game.target);
+    } else if (selectedTarget === "mouse") {
       drawMouse();
+    } else if (selectedTarget === "worm") {
+      drawWorm();
     } else {
       drawApple();
     }
@@ -313,8 +432,68 @@
     drawCatHead(game.segments[0]);
   }
 
+  function drawChickenHead(head) {
+    const centerX = (head.x + 0.5) * cellSize;
+    const centerY = (head.y + 0.5) * cellSize;
+    const unit = cellSize / 20;
+    context.save();
+    context.translate(centerX, centerY);
+    context.rotate(catRotation());
+    context.scale(unit, unit);
+
+    context.fillStyle = "#f4bc3b";
+    context.beginPath();
+    context.arc(0, 0, 7.5, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#e85a48";
+    [-3.4, 0, 3.4].forEach((x, index) => {
+      context.beginPath();
+      context.arc(x, -7.2 - (index === 1 ? 1 : 0), 2.3, 0, Math.PI * 2);
+      context.fill();
+    });
+
+    context.fillStyle = "#f08d32";
+    context.beginPath();
+    context.moveTo(-2.8, 5.3);
+    context.lineTo(0, 9.3);
+    context.lineTo(2.8, 5.3);
+    context.closePath();
+    context.fill();
+
+    context.fillStyle = "#26342f";
+    context.beginPath();
+    context.arc(-2.6, -1, 1, 0, Math.PI * 2);
+    context.arc(2.6, -1, 1, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
+
+  function drawChicken() {
+    game.segments.slice(1).forEach((part, bodyIndex) => {
+      const isTailTip = bodyIndex === game.segments.length - 2;
+      drawRoundedCell(part.x, part.y, isTailTip ? "#df8630" : "#f4bc3b", 3, 8);
+    });
+    drawChickenHead(game.segments[0]);
+  }
+
+  function drawCustomCharacter() {
+    game.segments.slice(1).forEach((part, bodyIndex) => {
+      const isTailTip = bodyIndex === game.segments.length - 2;
+      drawRoundedCell(part.x, part.y, isTailTip ? "#426b5a" : "#77ad8f", 3, 8);
+    });
+
+    if (!drawCustomImage(customAvatarImages.character, game.segments[0])) {
+      drawRoundedCell(game.segments[0].x, game.segments[0].y, "#285c47", 2, 8);
+    }
+  }
+
   function drawCharacter() {
-    if (selectedCharacter === "cat") {
+    if (selectedCharacter === "custom") {
+      drawCustomCharacter();
+    } else if (selectedCharacter === "chicken") {
+      drawChicken();
+    } else if (selectedCharacter === "cat") {
       drawCat();
     } else {
       drawSnake();
@@ -349,14 +528,17 @@
     clearCountdown();
     const character = selectedOption("character");
     const target = selectedOption("target");
-    showMessage(
-      "游戏结束",
-      `${character.name}抓到了 ${game.score} 个${target.name}，再试一次吧！`,
-      "再玩一次",
-    );
+    const title = newRecordThisRound ? "新纪录！" : "游戏结束";
+    const detail = newRecordThisRound
+      ? `${character.name}抓到了 ${game.score} 个${target.name}，创造了新的最高分！`
+      : `${character.name}抓到了 ${game.score} 个${target.name}，再试一次吧！`;
+    showMessage(title, detail, "再玩一次");
     startButton.textContent = "再玩一次";
     gameShell.dataset.gameState = "over";
     updatePauseButton({ disabled: true });
+    difficultyButtons.forEach((button) => {
+      button.disabled = false;
+    });
     sound.playGameOver();
   }
 
@@ -365,6 +547,7 @@
     render();
 
     if (result.reachedTarget) {
+      recordBestScore();
       sound.playCatch();
     }
 
@@ -386,11 +569,16 @@
     clearCountdown();
     window.clearInterval(timer);
     game.start();
+    newRecordThisRound = false;
+    scoreCard.classList.remove("new-record");
     hideMessage();
     startButton.textContent = "重新开始";
     messageAction.textContent = "重新开始";
     messageAction.hidden = false;
     gameShell.dataset.gameState = "running";
+    difficultyButtons.forEach((button) => {
+      button.disabled = true;
+    });
     updatePauseButton();
     render();
     canvas.focus({ preventScroll: true });
@@ -521,9 +709,17 @@
   function updatePickerTriggers() {
     const character = selectedOption("character");
     const target = selectedOption("target");
+
+    characterIcon.hidden = character.id === "custom";
+    characterImage.hidden = character.id !== "custom";
     characterIcon.textContent = character.icon;
+    characterImage.src = character.imageData || "";
     characterName.textContent = character.name;
+
+    targetIcon.hidden = target.id === "custom";
+    targetImage.hidden = target.id !== "custom";
     targetIcon.textContent = target.icon;
+    targetImage.src = target.imageData || "";
     targetName.textContent = target.name;
   }
 
@@ -542,23 +738,48 @@
   function renderDialogOptions() {
     const selectedId = activePicker === "character" ? selectedCharacter : selectedTarget;
     dialogOptions.replaceChildren();
+    const options = [...optionCatalog[activePicker]];
 
-    optionCatalog[activePicker].forEach((option) => {
+    if (customAvatarData[activePicker]) {
+      options.push({
+        id: "custom",
+        name: activePicker === "character" ? "我的主角" : "我的目标",
+        imageData: customAvatarData[activePicker],
+      });
+    }
+
+    options.forEach((option) => {
       const button = document.createElement("button");
-      const icon = document.createElement("span");
       const name = document.createElement("span");
       button.className = "dialog-option";
       button.type = "button";
       button.dataset.optionId = option.id;
       button.setAttribute("aria-pressed", String(option.id === selectedId));
-      icon.className = "dialog-option-icon";
-      icon.setAttribute("aria-hidden", "true");
-      icon.textContent = option.icon;
       name.textContent = option.name;
-      button.append(icon, name);
+
+      if (option.id === "custom") {
+        const image = document.createElement("img");
+        image.className = "dialog-option-image";
+        image.alt = "";
+        image.src = option.imageData;
+        button.append(image, name);
+      } else {
+        const icon = document.createElement("span");
+        icon.className = "dialog-option-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = option.icon;
+        button.append(icon, name);
+      }
+
       button.addEventListener("click", () => chooseOption(option.id));
       dialogOptions.append(button);
     });
+
+    const kindName = activePicker === "character" ? "主角" : "目标";
+    customUploadButton.textContent = `${customAvatarData[activePicker] ? "更换" : "＋ 添加"}自定义${kindName}`;
+    customUploadHelp.textContent = "图片会自动裁成正方形，只保存在当前设备，不会上传。";
+    customUploadStatus.textContent = "";
+    customUploadStatus.classList.remove("error");
   }
 
   function openPicker(type, trigger) {
@@ -614,6 +835,49 @@
   characterPicker.addEventListener("click", () => openPicker("character", characterPicker));
   targetPicker.addEventListener("click", () => openPicker("target", targetPicker));
   dialogClose.addEventListener("click", closePicker);
+  customUploadButton.addEventListener("click", () => {
+    customFileInput.value = "";
+    customFileInput.click();
+  });
+
+  customFileInput.addEventListener("change", async () => {
+    const file = customFileInput.files?.[0];
+    const uploadType = activePicker;
+    if (!file || !uploadType) return;
+
+    customUploadButton.disabled = true;
+    customUploadStatus.textContent = "正在处理图片……";
+    customUploadStatus.classList.remove("error");
+
+    try {
+      const dataUrl = await prepareAvatar(file);
+      const stored = customAvatars.save(uploadType, dataUrl);
+      customAvatarData[uploadType] = dataUrl;
+      const imageLoaded = await loadCustomAvatar(uploadType, dataUrl);
+      if (!imageLoaded) throw new Error("无法读取这张图片");
+
+      if (uploadType === "character") {
+        selectedCharacter = "custom";
+      } else {
+        selectedTarget = "custom";
+      }
+
+      updatePickerTriggers();
+      render();
+      if (activePicker === uploadType) {
+        if (!stored) {
+          customUploadStatus.textContent = "图片已使用，但浏览器没有足够空间长期保存。";
+          return;
+        }
+        closePicker();
+      }
+    } catch (error) {
+      customUploadStatus.textContent = error.message || "图片处理失败，请换一张试试。";
+      customUploadStatus.classList.add("error");
+    } finally {
+      customUploadButton.disabled = false;
+    }
+  });
 
   optionDialog.addEventListener("click", (event) => {
     if (event.target === optionDialog && !dialogCard.contains(event.target)) {
@@ -634,10 +898,7 @@
     button.addEventListener("click", (event) => {
       selectedDifficulty = event.currentTarget.dataset.difficulty;
       updatePressedButton(difficultyButtons, event.currentTarget);
-
-      if (game.status === "running" && timer !== null) {
-        scheduleTicks();
-      }
+      updateBestScoreDisplay();
     });
   });
 
@@ -682,7 +943,10 @@
 
   updateSoundButton();
   updatePauseButton({ disabled: true });
+  updateBestScoreDisplay();
   updatePickerTriggers();
+  loadCustomAvatar("character", customAvatarData.character);
+  loadCustomAvatar("target", customAvatarData.target);
   resizeCanvas();
 
   if (typeof ResizeObserver !== "undefined") {
