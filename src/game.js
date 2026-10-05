@@ -7,9 +7,25 @@
   const message = document.querySelector("#game-message");
   const messageTitle = document.querySelector("#message-title");
   const messageDetail = document.querySelector("#message-detail");
+  const difficultyButtons = document.querySelectorAll(".difficulty-option");
+  const difficultyNote = document.querySelector("#difficulty-note");
   const game = new SnakeGame({ gridSize: 20 });
   const cellSize = canvas.width / game.gridSize;
-  const tickLength = 145;
+  const difficultySettings = Object.freeze({
+    easy: {
+      tickLength: 230,
+      note: "简单模式速度较慢，适合先熟悉玩法。",
+    },
+    medium: {
+      tickLength: 145,
+      note: "中等模式就是原来的速度。",
+    },
+    hard: {
+      tickLength: 90,
+      note: "困难模式速度较快，要更早转弯。",
+    },
+  });
+  let selectedDifficulty = "easy";
   let timer = null;
 
   const keyDirections = {
@@ -137,21 +153,40 @@
     }
   }
 
-  function beginGame() {
+  function scheduleTicks() {
     window.clearInterval(timer);
+    timer = window.setInterval(tick, difficultySettings[selectedDifficulty].tickLength);
+  }
+
+  function beginGame() {
     game.start();
     message.classList.add("hidden");
     message.setAttribute("aria-hidden", "true");
     startButton.textContent = "重新开始";
     render();
-    timer = window.setInterval(tick, tickLength);
+    scheduleTicks();
   }
 
   startButton.addEventListener("click", beginGame);
 
+  difficultyButtons.forEach((button) => {
+    button.addEventListener("click", (event) => {
+      selectedDifficulty = event.currentTarget.dataset.difficulty;
+      difficultyButtons.forEach((difficultyButton) => {
+        const isSelected = difficultyButton === event.currentTarget;
+        difficultyButton.setAttribute("aria-pressed", String(isSelected));
+      });
+      difficultyNote.textContent = difficultySettings[selectedDifficulty].note;
+
+      if (game.status === "running") {
+        scheduleTicks();
+      }
+    });
+  });
+
   document.addEventListener("keydown", (event) => {
     const direction = keyDirections[event.key];
-    if (!direction) return;
+    if (!direction || game.status !== "running") return;
 
     event.preventDefault();
     game.queueDirection(direction);

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="一个简单、轻松的网页贪吃蛇小游戏" />
     <title>贪吃蛇小游戏</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=0.2.2" />
   </head>
   <body>
     <main class="game-shell">
@@ -34,12 +34,45 @@
           </div>
         </div>
 
+        <fieldset class="difficulty-picker">
+          <legend>选择难度</legend>
+          <div class="difficulty-options" role="group" aria-label="游戏难度">
+            <button
+              class="difficulty-option"
+              type="button"
+              data-difficulty="easy"
+              aria-pressed="true"
+            >
+              简单<small>慢一点</small>
+            </button>
+            <button
+              class="difficulty-option"
+              type="button"
+              data-difficulty="medium"
+              aria-pressed="false"
+            >
+              中等<small>当前速度</small>
+            </button>
+            <button
+              class="difficulty-option"
+              type="button"
+              data-difficulty="hard"
+              aria-pressed="false"
+            >
+              困难<small>快一点</small>
+            </button>
+          </div>
+          <p id="difficulty-note" class="difficulty-note" aria-live="polite">
+            简单模式速度较慢，适合先熟悉玩法。
+          </p>
+        </fieldset>
+
         <button id="start-button" class="start-button" type="button">开始游戏</button>
-        <p class="instructions">使用键盘方向键或 W A S D 控制方向</p>
+        <p class="instructions">使用键盘的上下左右键控制方向</p>
       </section>
     </main>
 
-    <script src="src/game-engine.js"></script>
-    <script src="src/game.js"></script>
+    <script src="src/game-engine.js?v=0.2.2"></script>
+    <script src="src/game.js?v=0.2.2"></script>
   </body>
 </html>
