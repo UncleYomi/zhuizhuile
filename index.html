@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="一个可以更换动物和目标的追逐小游戏" />
     <title>动物追追乐</title>
-    <link rel="stylesheet" href="style.css?v=0.3.0" />
+    <link rel="stylesheet" href="style.css?v=0.4.2" />
   </head>
   <body>
     <main class="game-shell">
@@ -34,95 +34,90 @@
           </div>
         </div>
 
-        <div class="customization-panel">
-          <fieldset class="choice-picker">
-            <legend>选择主角</legend>
-            <div class="choice-options" role="group" aria-label="主角">
-              <button
-                class="choice-option character-option"
-                type="button"
-                data-character="snake"
-                aria-pressed="true"
-              >
-                <span class="option-icon" aria-hidden="true">🐍</span>
-                小蛇
-              </button>
-              <button
-                class="choice-option character-option"
-                type="button"
-                data-character="cat"
-                aria-pressed="false"
-              >
-                <span class="option-icon" aria-hidden="true">🐱</span>
-                小猫
-              </button>
-            </div>
-          </fieldset>
-
-          <fieldset class="choice-picker">
-            <legend>选择目标</legend>
-            <div class="choice-options" role="group" aria-label="目标">
-              <button
-                class="choice-option target-option"
-                type="button"
-                data-target="apple"
-                aria-pressed="true"
-              >
-                <span class="option-icon" aria-hidden="true">🍎</span>
-                苹果
-              </button>
-              <button
-                class="choice-option target-option"
-                type="button"
-                data-target="mouse"
-                aria-pressed="false"
-              >
-                <span class="option-icon" aria-hidden="true">🐭</span>
-                老鼠
-              </button>
-            </div>
-          </fieldset>
-        </div>
-
-        <fieldset class="difficulty-picker">
-          <legend>选择难度</legend>
-          <div class="difficulty-options" role="group" aria-label="游戏难度">
+        <div class="control-panel">
+          <div class="picker-triggers">
             <button
-              class="difficulty-option"
+              id="character-picker"
+              class="picker-trigger"
               type="button"
-              data-difficulty="easy"
-              aria-pressed="true"
+              data-picker="character"
+              aria-haspopup="dialog"
+              aria-controls="option-dialog"
             >
-              简单<small>慢一点</small>
+              <span class="picker-label">选择主角</span>
+              <span class="picker-current">
+                <span id="character-icon" class="picker-icon" aria-hidden="true">🐍</span>
+                <strong id="character-name">小蛇</strong>
+              </span>
+              <span class="picker-action">更换</span>
             </button>
+
             <button
-              class="difficulty-option"
+              id="target-picker"
+              class="picker-trigger"
               type="button"
-              data-difficulty="medium"
-              aria-pressed="false"
+              data-picker="target"
+              aria-haspopup="dialog"
+              aria-controls="option-dialog"
             >
-              中等<small>当前速度</small>
-            </button>
-            <button
-              class="difficulty-option"
-              type="button"
-              data-difficulty="hard"
-              aria-pressed="false"
-            >
-              困难<small>快一点</small>
+              <span class="picker-label">选择目标</span>
+              <span class="picker-current">
+                <span id="target-icon" class="picker-icon" aria-hidden="true">🍎</span>
+                <strong id="target-name">苹果</strong>
+              </span>
+              <span class="picker-action">更换</span>
             </button>
           </div>
-          <p id="difficulty-note" class="difficulty-note" aria-live="polite">
-            简单模式速度较慢，适合先熟悉玩法。
-          </p>
-        </fieldset>
 
-        <button id="start-button" class="start-button" type="button">开始游戏</button>
-        <p class="instructions">使用键盘的上下左右键控制方向</p>
+          <fieldset class="difficulty-picker">
+            <legend>选择难度</legend>
+            <div class="difficulty-options" role="group" aria-label="游戏难度">
+              <button
+                class="difficulty-option"
+                type="button"
+                data-difficulty="easy"
+                aria-pressed="true"
+              >
+                简单
+              </button>
+              <button
+                class="difficulty-option"
+                type="button"
+                data-difficulty="medium"
+                aria-pressed="false"
+              >
+                中等
+              </button>
+              <button
+                class="difficulty-option"
+                type="button"
+                data-difficulty="hard"
+                aria-pressed="false"
+              >
+                困难
+              </button>
+            </div>
+          </fieldset>
+
+          <button id="start-button" class="start-button" type="button">开始游戏</button>
+          <p class="instructions">使用键盘的上下左右键控制方向</p>
+        </div>
       </section>
     </main>
 
-    <script src="src/game-engine.js?v=0.3.0"></script>
-    <script src="src/game.js?v=0.3.0"></script>
+    <dialog id="option-dialog" class="option-dialog" aria-labelledby="dialog-title">
+      <div class="dialog-card">
+        <header class="dialog-header">
+          <h2 id="dialog-title">选择主角</h2>
+          <button id="dialog-close" class="dialog-close" type="button" aria-label="关闭选择面板">
+            ×
+          </button>
+        </header>
+        <div id="dialog-options" class="dialog-options"></div>
+      </div>
+    </dialog>
+
+    <script src="src/game-engine.js?v=0.4.2"></script>
+    <script src="src/game.js?v=0.4.2"></script>
   </body>
 </html>

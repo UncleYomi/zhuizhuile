@@ -7,31 +7,42 @@
   const message = document.querySelector("#game-message");
   const messageTitle = document.querySelector("#message-title");
   const messageDetail = document.querySelector("#message-detail");
-  const characterButtons = document.querySelectorAll(".character-option");
-  const targetButtons = document.querySelectorAll(".target-option");
+  const characterPicker = document.querySelector("#character-picker");
+  const targetPicker = document.querySelector("#target-picker");
+  const characterIcon = document.querySelector("#character-icon");
+  const characterName = document.querySelector("#character-name");
+  const targetIcon = document.querySelector("#target-icon");
+  const targetName = document.querySelector("#target-name");
   const difficultyButtons = document.querySelectorAll(".difficulty-option");
-  const difficultyNote = document.querySelector("#difficulty-note");
+  const optionDialog = document.querySelector("#option-dialog");
+  const dialogCard = document.querySelector(".dialog-card");
+  const dialogTitle = document.querySelector("#dialog-title");
+  const dialogOptions = document.querySelector("#dialog-options");
+  const dialogClose = document.querySelector("#dialog-close");
   const game = new ChaseGame({ gridSize: 20 });
-  const cellSize = canvas.width / game.gridSize;
+  const logicalCanvasSize = 400;
+  const cellSize = logicalCanvasSize / game.gridSize;
   const difficultySettings = Object.freeze({
-    easy: {
-      tickLength: 230,
-      note: "简单模式速度较慢，适合先熟悉玩法。",
-    },
-    medium: {
-      tickLength: 145,
-      note: "中等模式就是原来的速度。",
-    },
-    hard: {
-      tickLength: 90,
-      note: "困难模式速度较快，要更早转弯。",
-    },
+    easy: 400,
+    medium: 280,
+    hard: 180,
   });
-  const characterNames = Object.freeze({ snake: "小蛇", cat: "小猫" });
-  const targetNames = Object.freeze({ apple: "苹果", mouse: "老鼠" });
+  const optionCatalog = Object.freeze({
+    character: Object.freeze([
+      Object.freeze({ id: "snake", name: "小蛇", icon: "🐍" }),
+      Object.freeze({ id: "cat", name: "小猫", icon: "🐱" }),
+    ]),
+    target: Object.freeze([
+      Object.freeze({ id: "apple", name: "苹果", icon: "🍎" }),
+      Object.freeze({ id: "mouse", name: "老鼠", icon: "🐭" }),
+    ]),
+  });
   let selectedCharacter = "snake";
   let selectedTarget = "apple";
   let selectedDifficulty = "easy";
+  let activePicker = null;
+  let activeTrigger = null;
+  let resumeAfterPicker = false;
   let timer = null;
 
   const keyDirections = {
@@ -39,19 +50,16 @@
     ArrowDown: "down",
     ArrowLeft: "left",
     ArrowRight: "right",
-    w: "up",
-    W: "up",
-    s: "down",
-    S: "down",
-    a: "left",
-    A: "left",
-    d: "right",
-    D: "right",
   };
+
+  function selectedOption(type) {
+    const selectedId = type === "character" ? selectedCharacter : selectedTarget;
+    return optionCatalog[type].find((option) => option.id === selectedId);
+  }
 
   function drawBoard() {
     context.fillStyle = "#dff0d8";
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillRect(0, 0, logicalCanvasSize, logicalCanvasSize);
 
     context.strokeStyle = "rgba(32, 53, 45, 0.08)";
     context.lineWidth = 1;
@@ -60,11 +68,11 @@
       const position = index * cellSize;
       context.beginPath();
       context.moveTo(position, 0);
-      context.lineTo(position, canvas.height);
+      context.lineTo(position, logicalCanvasSize);
       context.stroke();
       context.beginPath();
       context.moveTo(0, position);
-      context.lineTo(canvas.width, position);
+      context.lineTo(logicalCanvasSize, position);
       context.stroke();
     }
   }
@@ -271,11 +279,28 @@
     scoreElement.textContent = String(game.score);
   }
 
+  function resizeCanvas() {
+    const displaySize = canvas.getBoundingClientRect().width || logicalCanvasSize;
+    const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+    const backingSize = Math.round(displaySize * pixelRatio);
+
+    if (canvas.width !== backingSize || canvas.height !== backingSize) {
+      canvas.width = backingSize;
+      canvas.height = backingSize;
+    }
+
+    const scale = backingSize / logicalCanvasSize;
+    context.setTransform(scale, 0, 0, scale, 0, 0);
+    render();
+  }
+
   function showGameOver() {
     window.clearInterval(timer);
     timer = null;
+    const character = selectedOption("character");
+    const target = selectedOption("target");
     messageTitle.textContent = "游戏结束";
-    messageDetail.textContent = `${characterNames[selectedCharacter]}抓到了 ${game.score} 个${targetNames[selectedTarget]}，再试一次吧！`;
+    messageDetail.textContent = `${character.name}抓到了 ${game.score} 个${target.name}，再试一次吧！`;
     message.classList.remove("hidden");
     message.setAttribute("aria-hidden", "false");
     startButton.textContent = "再玩一次";
@@ -292,7 +317,7 @@
 
   function scheduleTicks() {
     window.clearInterval(timer);
-    timer = window.setInterval(tick, difficultySettings[selectedDifficulty].tickLength);
+    timer = window.setInterval(tick, difficultySettings[selectedDifficulty]);
   }
 
   function beginGame() {
@@ -310,31 +335,112 @@
     });
   }
 
-  startButton.addEventListener("click", beginGame);
+  function updatePickerTriggers() {
+    const character = selectedOption("character");
+    const target = selectedOption("target");
+    characterIcon.textContent = character.icon;
+    characterName.textContent = character.name;
+    targetIcon.textContent = target.icon;
+    targetName.textContent = target.name;
+  }
 
-  characterButtons.forEach((button) => {
-    button.addEventListener("click", (event) => {
-      selectedCharacter = event.currentTarget.dataset.character;
-      updatePressedButton(characterButtons, event.currentTarget);
-      render();
+  function chooseOption(optionId) {
+    if (activePicker === "character") {
+      selectedCharacter = optionId;
+    } else {
+      selectedTarget = optionId;
+    }
+
+    updatePickerTriggers();
+    render();
+    closePicker();
+  }
+
+  function renderDialogOptions() {
+    const selectedId = activePicker === "character" ? selectedCharacter : selectedTarget;
+    dialogOptions.replaceChildren();
+
+    optionCatalog[activePicker].forEach((option) => {
+      const button = document.createElement("button");
+      const icon = document.createElement("span");
+      const name = document.createElement("span");
+      button.className = "dialog-option";
+      button.type = "button";
+      button.dataset.optionId = option.id;
+      button.setAttribute("aria-pressed", String(option.id === selectedId));
+      icon.className = "dialog-option-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = option.icon;
+      name.textContent = option.name;
+      button.append(icon, name);
+      button.addEventListener("click", () => chooseOption(option.id));
+      dialogOptions.append(button);
     });
+  }
+
+  function openPicker(type, trigger) {
+    activePicker = type;
+    activeTrigger = trigger;
+    resumeAfterPicker = game.status === "running" && timer !== null;
+
+    if (resumeAfterPicker) {
+      window.clearInterval(timer);
+      timer = null;
+    }
+
+    dialogTitle.textContent = type === "character" ? "选择主角" : "选择目标";
+    dialogOptions.setAttribute("aria-label", dialogTitle.textContent);
+    renderDialogOptions();
+    optionDialog.showModal();
+  }
+
+  function closePicker() {
+    if (optionDialog.open) {
+      optionDialog.close();
+    }
+    finishPicker();
+  }
+
+  function finishPicker() {
+    if (!activePicker) return;
+
+    if (resumeAfterPicker && game.status === "running") {
+      scheduleTicks();
+    }
+
+    resumeAfterPicker = false;
+    const triggerToFocus = activeTrigger;
+    activePicker = null;
+    activeTrigger = null;
+    triggerToFocus?.focus();
+  }
+
+  startButton.addEventListener("click", beginGame);
+  characterPicker.addEventListener("click", () => openPicker("character", characterPicker));
+  targetPicker.addEventListener("click", () => openPicker("target", targetPicker));
+  dialogClose.addEventListener("click", closePicker);
+
+  optionDialog.addEventListener("click", (event) => {
+    if (event.target === optionDialog && !dialogCard.contains(event.target)) {
+      closePicker();
+    }
   });
 
-  targetButtons.forEach((button) => {
-    button.addEventListener("click", (event) => {
-      selectedTarget = event.currentTarget.dataset.target;
-      updatePressedButton(targetButtons, event.currentTarget);
-      render();
-    });
+  optionDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closePicker();
+  });
+
+  optionDialog.addEventListener("close", () => {
+    finishPicker();
   });
 
   difficultyButtons.forEach((button) => {
     button.addEventListener("click", (event) => {
       selectedDifficulty = event.currentTarget.dataset.difficulty;
       updatePressedButton(difficultyButtons, event.currentTarget);
-      difficultyNote.textContent = difficultySettings[selectedDifficulty].note;
 
-      if (game.status === "running") {
+      if (game.status === "running" && timer !== null) {
         scheduleTicks();
       }
     });
@@ -342,11 +448,18 @@
 
   document.addEventListener("keydown", (event) => {
     const direction = keyDirections[event.key];
-    if (!direction || game.status !== "running") return;
+    if (!direction || game.status !== "running" || optionDialog.open) return;
 
     event.preventDefault();
     game.queueDirection(direction);
   });
 
-  render();
+  updatePickerTriggers();
+  resizeCanvas();
+
+  if (typeof ResizeObserver !== "undefined") {
+    const canvasResizeObserver = new ResizeObserver(resizeCanvas);
+    canvasResizeObserver.observe(canvas);
+  }
+  window.addEventListener("resize", resizeCanvas);
 })();
